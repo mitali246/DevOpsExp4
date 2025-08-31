@@ -2,25 +2,50 @@ pipeline {
     agent any
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Environment Setup') {
             steps {
                 echo 'Setting up environment and installing dependencies...'
-                sh 'python3 -m venv venv'
-                sh 'source venv/bin/activate'
-                sh 'venv/bin/pip install pytest selenium'
-                sh 'curl -L https://chromedriver.storage.googleapis.com/LATEST_RELEASE/chromedriver_mac64.zip -o chromedriver.zip'
-                sh 'unzip chromedriver.zip'
-                sh 'chmod +x chromedriver'
-                sh 'export PATH=$PATH:$(pwd)'
+                sh '''
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    venv/bin/pip install --upgrade pip
+                    venv/bin/pip install pytest selenium
+                    LATEST=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+                    curl -L https://chromedriver.storage.googleapis.com/$LATEST/chromedriver_mac64.zip -o chromedriver.zip
+                    unzip -o chromedriver.zip
+                    chmod +x chromedriver
+                    mv chromedriver venv/bin/
+                '''
             }
         }
 
         stage('Run Selenium Tests') {
             steps {
-                echo 'Executing tests...'
-                sh 'source venv/bin/activate'
-                sh 'pytest'
+                echo 'Running Selenium tests with pytest...'
+                sh '''
+                    source venv/bin/activate
+                    venv/bin/pytest --maxfail=1 --disable-warnings -q
+                '''
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            sh 'rm -f chromedriver.zip || true'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Please check logs.'
         }
     }
 }
