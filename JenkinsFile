@@ -4,19 +4,15 @@ pipeline {
     stages {
         stage('Environment Setup') {
             steps {
-                echo 'Setting up environment and installing dependencies...'
-          
-                sh 'python3 -m venv venv'
-                sh 'source venv/bin/activate'
-                sh 'pip install pytest selenium'
-
-                sh 'wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE/chromedriver_mac64.zip'
-                sh 'unzip chromedriver_mac64.zip'
-                sh 'chmod +x chromedriver'
-
-                sh 'export PATH=$PATH:$(pwd)'
-            }
-        }
+        echo 'Setting up environment and installing dependencies...'
+        sh 'python3 -m venv venv'
+        sh 'source venv/bin/activate'
+        sh 'pip install pytest selenium' // This line is the problem
+        sh 'venv/bin/pip install pytest selenium' // This is the corrected line
+        sh 'sh chmod +x chromedriver'
+        sh 'export PATH=$PATH:$(pwd)'
+    }
+}
 
         stage('Run Selenium Tests') {
             steps {
